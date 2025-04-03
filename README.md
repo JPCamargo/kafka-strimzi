@@ -36,5 +36,8 @@ Para verificar que o cluster está pronto para receber conexões, execute o coma
 ```
 oc get kafka
 ```
+5) Criar usuário admin do cluster kafka através do 
+
+
 
 Obs.: Foi necessário criar um storage class no openshift com a configuração Volume binding mode = Immediate
