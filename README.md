@@ -18,10 +18,23 @@ oc config set-context --current --namespace=kafka-strimzi
 
 Nesse lab foi utilizado a versão 0.45.0 do kafka strimzi
 
-3) Crie o configMap kafka-metrics que será utilizado para coleta de métricas via JMX
+3) Crie o configMap [kafka-metrics.yaml](kafka-metrics.yaml) que será utilizado para coleta de métricas via JMX
 
 Essas métricas serão utilizadas para configuração de alertas e dashboards no grafaba
 
 ```
-oc apply -f Kafka-Metrics.yaml -n kafka-strimzi
+oc apply -f kafka-metrics.yaml -n kafka-strimzi
 ```
+
+4) Crie o cluster através do arquivo de configuração  [kafka-server.yaml](kafka-server.yaml)
+
+```
+oc apply -f kafka-server.yaml -n kafka-strimzi
+```
+Para verificar que o cluster está pronto para receber conexões, execute o comando a seguir.
+
+```
+oc get kafka
+```
+
+Obs.: Foi necessário criar um storage class no openshift com a configuração Volume binding mode = Immediate
