@@ -35,6 +35,19 @@ Para verificar que o cluster está pronto para receber conexões, execute o coma
 
 ```
 oc get kafka
+
+oc get kafka my-cluster -o jsonpath='{.status}' | jq
+
+# Editar configurações do cluster
+# Aumentar o número de brokers
+oc edit kafka my-cluster
+
+# zookeeper shell
+kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /
+kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/ids
+kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/topics
 ```
+
+
 
 Obs.: Foi necessário criar um storage class no openshift com a configuração Volume binding mode = Immediate
