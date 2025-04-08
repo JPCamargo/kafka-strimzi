@@ -47,6 +47,19 @@ kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:1218
 kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/ids
 kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/topics
 ```
+
+Criar tópico a partir do arquivo [kafka-topic.yaml](topico-teste-2.yaml)
+
+```
+oc apply -f topico-teste-2.yaml
+
+oc get kafkatopics
+
+#verificar as informações sobre o tópico
+oc get kafkatopics topico-teste-2 -o json | jq .
+```
+
+
 5) Criar usuário admin do cluster kafka através do 
 
 
