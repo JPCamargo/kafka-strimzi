@@ -47,6 +47,9 @@ kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:1218
 kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/ids
 kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/topics
 ```
+5) Criar usuário admin do cluster kafka através do 
+
+
 
 
 
