@@ -113,7 +113,7 @@ EOF
 
 Adicione o password do usuario admin no conf.properties
 ```
-sed -i "s/passwd/$passwd/g" /tmp/conf.properties
+sed -i "s/passwd/$passwd/g" ./conf.properties
 ```
 
 - Listar todos os topicos
@@ -135,6 +135,75 @@ kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --cons
 
 ### Produzindo e consumindo com user específicos
 
+```
+# Criar o tópico que será utilizado para o teste
+oc apply -f topic-kafka-user.yaml
+oc get kafkatopics
+
+#criar usuários para produção e consumo nesse tópico
+oc apply -f producer-user.yaml
+oc apply -f consumer-user.yaml
+
+oc get kafkausers
+oc get kafkauser producer-user -o json | jq .
+oc get kafkauser consumer-user -o json | jq .
+
+#Acessar o container para produzir mensagens no tópico
+oc exec my-shell -i --tty -- bash
+
+#crie a váriavel com o password do producer
+oc exec my-shell -i --tty -- bash
+passwd=$(kubectl get secret user-producer-user -o jsonpath='{.data.password}' | base64 -d)
+
+#Crie o properties
+
+cat <<EOF> conf.properties
+security.protocol=SASL_SSL
+sasl.mechanism=SCRAM-SHA-512
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="producer-user" password=passwd;
+ssl.truststore.location=truststore.jks
+ssl.truststore.password=password
+EOF
+
+#Adicione o password do usuario producer-user no conf.properties
+
+sed -i "s/passwd/$passwd/g" ./conf.properties
+
+#Listar todos os topicos
+
+kafka-topics --bootstrap-server my-cluster-kafka-bootstrap:9093 --list --command-config conf.properties
+
+#Produzir mensagem
+
+kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --producer.config conf.properties --topic topic-test
+
+```
+
+```
+#Hora de consumir as mensagens produzidas
+kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config conf.properties --from-beginning --topic topic-test
+
+#Crie o properties
+
+cat <<EOF> confconsumer.properties
+security.protocol=SASL_SSL
+sasl.mechanism=SCRAM-SHA-512
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="consumer-user" password=passwd;
+ssl.truststore.location=truststore.jks
+ssl.truststore.password=password
+EOF
+
+#crie a váriavel com o password do consumer
+
+passwdconsumer=$(kubectl get secret user-consumer-user -o jsonpath='{.data.password}' | base64 -d)
+
+#Adicione o password do usuario consumer-user no conf.properties
+
+sed -i "s/passwd/$passwdconsumer/g" ./confconsumer.properties
+
+kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config confconsumer.properties --from-beginning --topic kafka-user-test
+
+```
 
 
 - Producer perf test

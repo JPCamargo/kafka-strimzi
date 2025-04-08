@@ -18,3 +18,10 @@ spec:
         operations:
           - Read
         host: "*"
+      - resource:
+          type: group
+          name: consumer-group
+          patternType: literal
+        operations:
+          - Read
+        host: "*"
