@@ -133,6 +133,10 @@ kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --prod
 kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config conf.properties --from-beginning --topic topic-test
 ```
 
+### Produzindo e consumindo com user específicos
+
+
+
 - Producer perf test
 
 ```
