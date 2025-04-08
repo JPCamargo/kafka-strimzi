@@ -48,7 +48,7 @@ kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:1218
 kubectl exec -ti my-cluster-zookeeper-1 -- bin/zookeeper-shell.sh localhost:12181 ls /brokers/topics
 ```
 
-Criar tópico a partir do arquivo [kafka-topic.yaml](topico-teste-2.yaml)
+5) Criar tópico a partir do arquivo [kafka-topic.yaml](topico-teste-2.yaml)
 
 ```
 oc apply -f topico-teste-2.yaml
@@ -60,10 +60,90 @@ oc get kafkatopics topico-teste-2 -o json | jq .
 ```
 
 
-5) Criar usuário admin do cluster kafka através do 
+5) Criar usuário admin do cluster kafka através do arquivo [kafka-admin.yaml](kafka-admin.yaml)
+
+```
+oc apply -f kafka-admin.yaml
+
+#listar usuários do kafka
+oc get kafkausers
+
+#verificar as informações do usuário
+oc get kafkauser admin -o json | jq .
+
+```
+
+### Internal Pod
+Vamos iniciar um POD com  imagem da Confluent para realizar alguns testes e gerar nossa keystore.
+
+```
+kubectl run my-shell --rm -i --tty --image confluentinc/cp-kafka -- bash
+```
+
+- Instale Kubectl.
+
+```
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && mkdir bin && mv kubectl bin && chmod +x bin/kubectl
+```
+
+- Gerando keystore
+
+```
+kubectl get secret my-cluster-cluster-ca-cert -o jsonpath='{.data.ca\.crt}' | base64 -d > ca.crt
+keytool -import -trustcacerts -alias root -file ca.crt -keystore truststore.jks -storepass password -noprompt
+```
+
+- Password user admin
+
+Crie a variável com password do usuário admin.
+```
+passwd=$(kubectl get secret user-admin -o jsonpath='{.data.password}' | base64 -d)
+```
+
+Crie o properties
+```
+cat <<EOF> conf.properties
+security.protocol=SASL_SSL
+sasl.mechanism=SCRAM-SHA-512
+sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="admin" password=passwd;
+ssl.truststore.location=truststore.jks
+ssl.truststore.password=password
+EOF
+```
+
+Adicione o password do usuario admin no conf.properties
+```
+sed -i "s/passwd/$passwd/g" /tmp/conf.properties
+```
+
+- Listar todos os topicos
+```
+kafka-topics --bootstrap-server my-cluster-kafka-bootstrap:9093 --list --command-config conf.properties
+```
+
+- Produzir mensagem
+
+```
+kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --producer.config conf.properties --topic topic-test
+```
+
+- Consumir mensagem
+
+```
+kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config conf.properties --from-beginning --topic topic-test
+```
+
+- Producer perf test
+
+```
+
+kafka-producer-perf-test --topic topico-teste-2 --num-records 1000000 --record-size 100 --throughput -1 --producer-props acks=all --producer-props partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner bootstrap.servers=my-cluster-kafka-bootstrap:9093 --producer.config conf.properties
+
+```
 
 
-
+#comando para acessar o cluster externamente
+~/kafka_2.13-3.9.0/bin/kafka-topics.sh --bootstrap-server my-cluster-kafka-external1-bootstrap-kafka-strimzi.apps.okd.34-75-7-172.nip.io:443 --list --command-config conf.properties
 
 
 Obs.: Foi necessário criar um storage class no openshift com a configuração Volume binding mode = Immediate
