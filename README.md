@@ -97,12 +97,12 @@ keytool -import -trustcacerts -alias root -file ca.crt -keystore truststore.jks 
 
 Crie a variável com password do usuário admin.
 ```
-passwd=$(kubectl get secret user-admin -o jsonpath='{.data.password}' | base64 -d)
+passwdadmin=$(kubectl get secret user-admin -o jsonpath='{.data.password}' | base64 -d)
 ```
 
 Crie o properties
 ```
-cat <<EOF> conf.properties
+cat <<EOF> confadmin.properties
 security.protocol=SASL_SSL
 sasl.mechanism=SCRAM-SHA-512
 sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="admin" password=passwd;
@@ -111,26 +111,26 @@ ssl.truststore.password=password
 EOF
 ```
 
-Adicione o password do usuario admin no conf.properties
+Adicione o password do usuario admin no confadmin.properties
 ```
-sed -i "s/passwd/$passwd/g" ./conf.properties
+sed -i "s/passwd/$passwdadmin/g" ./confadmin.properties
 ```
 
 - Listar todos os topicos
 ```
-kafka-topics --bootstrap-server my-cluster-kafka-bootstrap:9093 --list --command-config conf.properties
+kafka-topics --bootstrap-server my-cluster-kafka-bootstrap:9093 --list --command-config confadmin.properties
 ```
 
 - Produzir mensagem
 
 ```
-kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --producer.config conf.properties --topic topic-test
+kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --producer.config confadmin.properties --topic topic-test
 ```
 
 - Consumir mensagem
 
 ```
-kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config conf.properties --from-beginning --topic topic-test
+kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config confadmin.properties --from-beginning --topic topic-test
 ```
 
 ### Produzindo e consumindo com user específicos
@@ -153,11 +153,11 @@ oc exec my-shell -i --tty -- bash
 
 #crie a váriavel com o password do producer
 oc exec my-shell -i --tty -- bash
-passwd=$(kubectl get secret user-producer-user -o jsonpath='{.data.password}' | base64 -d)
+passwdprod=$(kubectl get secret user-producer-user -o jsonpath='{.data.password}' | base64 -d)
 
 #Crie o properties
 
-cat <<EOF> conf.properties
+cat <<EOF> confproducer.properties
 security.protocol=SASL_SSL
 sasl.mechanism=SCRAM-SHA-512
 sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="producer-user" password=passwd;
@@ -167,21 +167,21 @@ EOF
 
 #Adicione o password do usuario producer-user no conf.properties
 
-sed -i "s/passwd/$passwd/g" ./conf.properties
+sed -i "s/passwd/$passwdprod/g" ./confproducer.properties
 
 #Listar todos os topicos
 
-kafka-topics --bootstrap-server my-cluster-kafka-bootstrap:9093 --list --command-config conf.properties
+kafka-topics --bootstrap-server my-cluster-kafka-bootstrap:9093 --list --command-config confproducer.properties
 
 #Produzir mensagem
 
-kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --producer.config conf.properties --topic topic-test
+kafka-console-producer --bootstrap-server my-cluster-kafka-bootstrap:9093 --producer.config confproducer.properties --topic kafka-user-test
 
 ```
 
 ```
 #Hora de consumir as mensagens produzidas
-kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config conf.properties --from-beginning --topic topic-test
+kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config conf.properties --from-beginning --topic kafka-user-test
 
 #Crie o properties
 
@@ -201,7 +201,7 @@ passwdconsumer=$(kubectl get secret user-consumer-user -o jsonpath='{.data.passw
 
 sed -i "s/passwd/$passwdconsumer/g" ./confconsumer.properties
 
-kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config confconsumer.properties --from-beginning --topic kafka-user-test
+kafka-console-consumer --bootstrap-server my-cluster-kafka-bootstrap:9093 --consumer.config confconsumer.properties --from-beginning --topic kafka-user-test --consumer-property group.id=consumer-group
 
 ```
 
